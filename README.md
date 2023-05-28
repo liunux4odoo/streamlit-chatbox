@@ -31,7 +31,7 @@ chat_box.output_messages() # you need output the msg first for streaming output
 q = st.text_input('input', placeholder='input your question here')
 if q:
     chat_box.user_say(q)
-    text = f'my answer to:\n\n{q}\n\n```this is some code```'
+    text = f'my answer to:\n\n{q}\n\n```this is some code```\n\n'
     if streaming:
         chat_box.robot_say('')
         for i in range(1, len(text)+2, 5):
@@ -42,3 +42,4 @@ if q:
 
 chat_box.output_messages()
 ```
+![demo](https://github.com/liunux4odoo/streamlit-chatbox/blob/master/demo.gif)
