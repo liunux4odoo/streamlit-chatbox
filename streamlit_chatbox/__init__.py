@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 
 
 class MsgType:
@@ -12,13 +13,13 @@ class StChatBox:
     def __init__(
         self,
         chat_box,
-        session_var = 'chat_box',
-        greetings = [],
-        box_margin = '10%',
-        user_bg_color = '#77ff77',
-        user_icon = 'https://tse2-mm.cn.bing.net/th/id/OIP-C.LTTKrxNWDr_k74wz6jKqBgHaHa?w=203&h=203&c=7&r=0&o=5&pid=1.7',
-        robot_bg_color = '#ccccee',
-        robot_icon = 'https://ts1.cn.mm.bing.net/th/id/R-C.5302e2cc6f5c7c4933ebb3394e0c41bc?rik=z4u%2b7efba5Mgxw&riu=http%3a%2f%2fcomic-cons.xyz%2fwp-content%2fuploads%2fStar-Wars-avatar-icon-C3PO.png&ehk=kBBvCvpJMHPVpdfpw1GaH%2brbOaIoHjY5Ua9PKcIs%2bAc%3d&risl=&pid=ImgRaw&r=0',
+        session_var='chat_box',
+        greetings=[],
+        box_margin='10%',
+        user_bg_color='#77ff77',
+        user_icon='',
+        robot_bg_color='#ccccee',
+        robot_icon='',
     ):
         self.session_var = session_var
         self.greetings = greetings
@@ -32,25 +33,21 @@ class StChatBox:
         self.init_session()
         self.show_welcome()
 
-
     def init_session(self):
-        st.session_state.setdefault(self.session_var, {'history': [], 'welcomed': False})
-
+        st.session_state.setdefault(
+            self.session_var, {'history': [], 'welcomed': False})
 
     @property
     def history(self):
         return st.session_state.get(self.session_var, {}).get('history', [])
 
-
     @property
     def welcomed(self):
         return st.session_state.get(self.session_var, {}).get('welcomed', False)
 
-
     @welcomed.setter
     def welcomed(self, val):
         st.session_state[self.session_var]['welcomed'] = bool(val)
-
 
     def format_md(self, msg, is_user=False, bg_color=None, margin=None):
         '''
@@ -82,25 +79,22 @@ class StChatBox:
                     '''
         return text
 
-
     def robot_say(self, msg, msg_type=MsgType.TEXT, **kw):
         kw.update(is_user=False, content=msg, msg_type=msg_type)
         self.history.append(kw)
-
 
     def user_say(self, msg, msg_type=MsgType.TEXT, **kw):
         kw.update(is_user=True, content=msg, msg_type=msg_type)
         self.history.append(kw)
 
-
     def render_msg(self,
-                msg,
-                is_user=False,
-                msg_type=MsgType.TEXT,
-                icon=None,
-                bg_color=None,
-                margin=None,
-                ):
+                   msg,
+                   is_user=False,
+                   msg_type=MsgType.TEXT,
+                   icon=None,
+                   bg_color=None,
+                   margin=None,
+                   ):
         '''
         渲染单条消息。目前仅支持文本
         '''
@@ -129,7 +123,6 @@ class StChatBox:
                 raise RuntimeError('only support text message now.')
         return empty
 
-
     def show_welcome(self):
         if self.greetings and not self.welcomed:
             greetings = self.greetings
@@ -141,7 +134,6 @@ class StChatBox:
                 elif isinstance(g, dict):
                     self.robot_say(**g)
             self.welcomed = True
-
 
     def output_messages(
         self,
@@ -155,24 +147,31 @@ class StChatBox:
                 bg_color = user_bg_color if msg['is_user'] else robot_bg_color
                 icon = user_icon if msg['is_user'] else robot_icon
                 empty = self.render_msg(msg['content'],
-                                is_user=msg['is_user'],
-                                icon=icon,
-                                msg_type=msg['msg_type'],
-                                bg_color=bg_color,
-                                )
+                                        is_user=msg['is_user'],
+                                        icon=icon,
+                                        msg_type=msg['msg_type'],
+                                        bg_color=bg_color,
+                                        )
                 if not msg['is_user']:
                     self.last_response = empty
         return self.last_response
-
 
     def update_last_box_text(self, msg):
         if self.last_response is not None:
             self.history[-1]['content'] = msg
             self.last_response.markdown(
-                        self.format_md(msg, False),
-                        unsafe_allow_html=True
-                    )
+                self.format_md(msg, False),
+                unsafe_allow_html=True
+            )
 
+    def robot_stream(self, msg, words_per_sec=10, max_seconds=10):
+        step = max(words_per_sec, len(msg) // max_seconds + 1) // 5 + 1
+        self.robot_say('')
+        self.output_messages()
+        for i in range(step, len(msg) + step * 2, step):
+            print(i, msg[:i])
+            time.sleep(0.2)
+            self.update_last_box_text(msg[:i])
 
     def clear_history(self, welcome_again=False):
         self.history = []
@@ -180,7 +179,33 @@ class StChatBox:
             self.show_welcome()
 
 
-def st_chatbox(**kw):
+def st_chatbox(
+        session_var='chat_box',
+        greetings=[],
+        box_margin='10%',
+        user_bg_color='#77ff77',
+        user_icon='https://tse2-mm.cn.bing.net/th/id/OIP-C.LTTKrxNWDr_k74wz6jKqBgHaHa?w=203&h=203&c=7&r=0&o=5&pid=1.7',
+        robot_bg_color='#ccccee',
+        robot_icon='https://ts1.cn.mm.bing.net/th/id/R-C.5302e2cc6f5c7c4933ebb3394e0c41bc?rik=z4u%2b7efba5Mgxw&riu=http%3a%2f%2fcomic-cons.xyz%2fwp-content%2fuploads%2fStar-Wars-avatar-icon-C3PO.png&ehk=kBBvCvpJMHPVpdfpw1GaH%2brbOaIoHjY5Ua9PKcIs%2bAc%3d&risl=&pid=ImgRaw&r=0',
+):
+    '''
+    :param session_var: variable name used to store chat history in session_state
+    :param greetings: show messages when chat box first inited
+    :param box_margin: blank area of a single message box
+    :param user_bg_color: background color of user's message box
+    :param user_icon: icon of user
+    :param robot_bg_color: background color of robot's message box
+    :param robot_icon: icon of robot
+    :return: instance of StChatBox, use it to append and render messages
+    '''
     empty = st.empty()
-    return StChatBox(empty, **kw)
-
+    return StChatBox(
+        chat_box=empty,
+        session_var=session_var,
+        greetings=greetings,
+        box_margin=box_margin,
+        user_bg_color=user_bg_color,
+        user_icon=user_icon,
+        robot_bg_color=robot_bg_color,
+        robot_icon=robot_icon
+    )
