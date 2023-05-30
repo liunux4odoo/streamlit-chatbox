@@ -16,6 +16,7 @@ class StChatBox:
         session_var='chat_box',
         greetings=[],
         box_margin='10%',
+        box_border='1px solid',
         user_bg_color='#77ff77',
         user_icon='',
         robot_bg_color='#ccccee',
@@ -24,6 +25,7 @@ class StChatBox:
         self.session_var = session_var
         self.greetings = greetings
         self.box_margin = box_margin
+        self.box_border = box_border
         self.user_bg_color = user_bg_color
         self.user_icon = user_icon
         self.robot_bg_color = robot_bg_color
@@ -49,16 +51,18 @@ class StChatBox:
     def welcomed(self, val):
         st.session_state[self.session_var]['welcomed'] = bool(val)
 
-    def format_md(self, msg, is_user=False, bg_color=None, margin=None):
+    def format_md(self, msg, is_user=False, bg_color=None, margin=None, border=None):
         '''
         将文本消息格式化为markdown文本
         '''
         margin = margin or self.box_margin
+        border = border or self.box_border
         if is_user:
             bg_color = bg_color or self.user_bg_color
             text = f'''
                     <div style="background:{bg_color};
                             margin-left:{margin};
+                            border: {border};
                             word-break:break-all;
                             float:right;
                             padding:2%;
@@ -71,6 +75,7 @@ class StChatBox:
             text = f'''
                     <div style="background:{bg_color};
                             margin-right:{margin};
+                            border: {border};
                             word-break:break-all;
                             padding:2%;
                             border-radius:20px 0 0 0;">
@@ -164,12 +169,11 @@ class StChatBox:
                 unsafe_allow_html=True
             )
 
-    def robot_stream(self, msg, words_per_sec=10, max_seconds=10):
+    def robot_stream(self, msg, init_msg='', words_per_sec=10, max_seconds=10):
         step = max(words_per_sec, len(msg) // max_seconds + 1) // 5 + 1
-        self.robot_say('')
+        self.robot_say(init_msg)
         self.output_messages()
         for i in range(step, len(msg) + step * 2, step):
-            print(i, msg[:i])
             time.sleep(0.2)
             self.update_last_box_text(msg[:i])
 
@@ -183,6 +187,7 @@ def st_chatbox(
         session_var='chat_box',
         greetings=[],
         box_margin='10%',
+        box_border='1px solid',
         user_bg_color='#77ff77',
         user_icon='https://tse2-mm.cn.bing.net/th/id/OIP-C.LTTKrxNWDr_k74wz6jKqBgHaHa?w=203&h=203&c=7&r=0&o=5&pid=1.7',
         robot_bg_color='#ccccee',
@@ -204,6 +209,7 @@ def st_chatbox(
         session_var=session_var,
         greetings=greetings,
         box_margin=box_margin,
+        box_border=box_border,
         user_bg_color=user_bg_color,
         user_icon=user_icon,
         robot_bg_color=robot_bg_color,

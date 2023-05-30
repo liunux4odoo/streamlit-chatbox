@@ -39,4 +39,8 @@ if q:
 
 chat_box.output_messages()
 ```
+
+use `help(st_chatbox)` to see more custom params.
+
+
 ![demo](https://github.com/liunux4odoo/streamlit-chatbox/blob/master/demo.gif)
