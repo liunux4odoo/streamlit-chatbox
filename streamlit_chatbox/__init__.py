@@ -99,9 +99,10 @@ class StChatBox:
                    icon=None,
                    bg_color=None,
                    margin=None,
+                   **kw,
                    ):
         '''
-        渲染单条消息。目前仅支持文本
+        渲染单条消息。
         '''
         margin = margin or self.box_margin
         cols = st.columns([1, 10, 1])
@@ -114,8 +115,14 @@ class StChatBox:
             if msg_type == MsgType.TEXT:
                 text = self.format_md(msg, is_user, bg_color, margin)
                 empty.markdown(text, unsafe_allow_html=True)
+            elif msg_type == MsgType.IMAGE:
+                empty.image(msg, use_column_width='auto')
+            elif msg_type == MsgType.VIDEO:
+                empty.video(msg, format=kw.get('format', 'video/mp4'))
+            elif msg_type == MsgType.AUDIO:
+                empty.audio(msg, format=kw.get('format', 'audio/wav'))
             else:
-                raise RuntimeError('only support text message now.')
+                raise RuntimeError(f'unsupported message type: {msg_type} .')
         else:
             icon = icon or self.robot_icon
             bg_color = bg_color or self.robot_bg_color
@@ -124,8 +131,14 @@ class StChatBox:
             if msg_type == MsgType.TEXT:
                 text = self.format_md(msg, is_user, bg_color, margin)
                 empty.markdown(text, unsafe_allow_html=True)
+            elif msg_type == MsgType.IMAGE:
+                empty.image(msg, use_column_width='auto')
+            elif msg_type == MsgType.VIDEO:
+                empty.video(msg, format=kw.get('format', 'video/mp4'))
+            elif msg_type == MsgType.AUDIO:
+                empty.audio(msg, format=kw.get('format', 'audio/wav'))
             else:
-                raise RuntimeError('only support text message now.')
+                raise RuntimeError(f'unsupported message type: {msg_type} .')
         return empty
 
     def show_welcome(self):
@@ -156,6 +169,7 @@ class StChatBox:
                                         icon=icon,
                                         msg_type=msg['msg_type'],
                                         bg_color=bg_color,
+
                                         )
                 if not msg['is_user']:
                     self.last_response = empty
