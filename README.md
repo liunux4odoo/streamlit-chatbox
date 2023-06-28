@@ -54,13 +54,18 @@ chat_box.output_messages()
 ## Todos
 
 - input messages:
-	- [ x ] TEXT
-	- [   ] IMAGE
-	- [   ] VIDEO
-	- [   ] AUDIO
+	- [x] TEXT
+	- [ ] IMAGE
+		- [ ] file upload
+		- [ ] paste from clipboard(streamlit_bokeh_events)
+	- [ ] VIDEO
+		- [ ] file upload
+	- [ ] AUDIO
+		- [ ] file upload
+		- [ ] audio-recorder-streamlit
 
 - output messages:
-	- [ x ] TEXT
-	- [ x ] IMAGE
-	- [ x ] VIDEO
-	- [ x ] AUDIO
+	- [x] TEXT
+	- [x] IMAGE
+	- [x] VIDEO
+	- [x] AUDIO

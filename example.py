@@ -1,5 +1,5 @@
 import streamlit as st
-from streamlit_chatbox import st_chatbox, MsgType
+from streamlit_chatbox import st_chatbox, MsgType, st_chat_input
 import time
 
 
@@ -23,5 +23,7 @@ if q:
     chat_box.robot_say('https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4', MsgType.VIDEO, format='viedo/mp4')
 
     chat_box.robot_say('https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4', MsgType.AUDIO, format='audio/mp4')
+
+st_chat_input()
 
 chat_box.output_messages()

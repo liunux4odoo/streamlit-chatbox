@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+# from streamlit_option_menu import option_menu
 
 
 class MsgType:
@@ -55,6 +56,7 @@ class StChatBox:
         '''
         将文本消息格式化为markdown文本
         '''
+        msg = '\n' + msg.strip() # prepend '\n' to make first line paragraph
         margin = margin or self.box_margin
         border = border or self.box_border
         if is_user:
@@ -229,3 +231,41 @@ def st_chatbox(
         robot_bg_color=robot_bg_color,
         robot_icon=robot_icon
     )
+
+
+def _msg_type_format_func(val):
+    return {
+        MsgType.TEXT: 'TEXT',
+        MsgType.IMAGE: 'IMAGE',
+        MsgType.VIDEO: 'VIDEO',
+        MsgType.AUDIO: 'AUDIO',
+    }[val]
+
+
+# def st_chat_input(
+#     prefix='chat',
+#     send_btn='send',
+#     ):
+
+#     cols1 = st.columns([1, 5])
+#     msg_type = cols1[0].selectbox(
+#                     'MsgType',
+#                     [MsgType.TEXT, MsgType.IMAGE, MsgType.VIDEO, MsgType.AUDIO],
+#                     # label_visibility='collapsed',
+#                     format_func=_msg_type_format_func,
+#                     )
+#     with cols1[1].form(f'{prefix}_input_form', clear_on_submit=True):
+#         cols2 = st.columns([5, 1])
+#         if msg_type == MsgType.TEXT:
+#             msg = cols2[0].text_input('text', label_visibility='collapsed')
+#         elif msg_type == MsgType.IMAGE:
+#             msg = None
+#             cols3 = cols2[0].columns(2)
+#             file = cols3[0].file_uploader('file', ['jpg', 'bmp', 'jpeg', 'png'], label_visibility='collapsed')
+#             clipboard = cols3[0].button('从剪切板粘贴')
+#             if file:
+#                 cols3[1].image(file)
+#                 msg = file.getvalue()
+                
+
+#         submit = cols2[1].form_submit_button(send_btn)
