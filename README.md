@@ -1,3 +1,10 @@
+# Attention!
+
+Since version 1.24.0 streamlit provides official elements to [build conversational apps](https://docs.streamlit.io/knowledge-base/tutorials/build-conversational-apps).
+
+The new elements are more flexible, extensible and better supported, I would suggest to use them. 
+
+
 # Chatbox component for streamlit
 
 A Streamlit component to show chat messages.
