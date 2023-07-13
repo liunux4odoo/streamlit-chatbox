@@ -181,7 +181,7 @@ class StChatBox:
         if self.last_response is not None:
             self.history[-1]['content'] = msg
             self.last_response.markdown(
-                self.format_md(msg, False),
+                self.format_md(msg + '▌', False),
                 unsafe_allow_html=True
             )
 

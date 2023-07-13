@@ -8,7 +8,7 @@ def readme():
 
 setuptools.setup(
     name='streamlit-chatbox',
-    version='0.2.2',
+    version='0.2.3',
     author='liunux',
     author_email='liunux@qq.com',
     description='A chat box used in streamlit',
@@ -20,6 +20,6 @@ setuptools.setup(
     classifiers=[],
     python_requires='>=3.6',
     install_requires=[
-                'streamlit',
+        'streamlit',
     ]
 )

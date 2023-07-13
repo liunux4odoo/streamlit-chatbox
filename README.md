@@ -4,6 +4,8 @@ Since version 1.24.0 streamlit provides official elements to [build conversation
 
 The new elements are more flexible, extensible and better supported, I would suggest to use them. 
 
+However, streamlit>=1.23 requires protobuf>=4 when some package requires protobuf<=3. In this condition you can use this package with streamlit<=1.22 as alternative. They are all simple to render text messages.
+
 
 # Chatbox component for streamlit
 
