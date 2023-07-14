@@ -177,11 +177,13 @@ class StChatBox:
                     self.last_response = empty
         return self.last_response
 
-    def update_last_box_text(self, msg):
+    def update_last_box_text(self, msg, cursor_pos="\n\n<details>"):
         if self.last_response is not None:
             self.history[-1]['content'] = msg
+            if cursor_pos:
+                msg = msg.replace(cursor_pos, " ▌" + cursor_pos, 1)
             self.last_response.markdown(
-                self.format_md(msg + '▌', False),
+                self.format_md(msg, False),
                 unsafe_allow_html=True
             )
 
