@@ -92,6 +92,27 @@ class ChatBox:
                 for element in msg["elements"]:
                     element()
 
+    def update_msg(
+        self,
+        element: Union["OutputElement", str],
+        element_index: int = -1,
+        history_index: int = -1,
+        streaming: Optional[bool] = None,
+    ) -> st._DeltaGenerator:
+        if isinstance(element, str):
+            element = Markdown(element)
+            if streaming is None:
+                streaming = True
+        if streaming and isinstance(element, Markdown):
+            element._content += " ▌"
+        old_element = self.history[history_index]["elements"][element_index]
+        dg = old_element.update_element(
+            element, streaming
+        )
+        element.attrs_from(old_element)
+        self.history[history_index]["elements"][element_index] = element
+        return dg
+
 
 class FakeLLM:
     def _answer(self, query: str) -> str:

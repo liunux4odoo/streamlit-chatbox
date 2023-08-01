@@ -30,11 +30,10 @@ if query := st.chat_input('input your question here'):
         text = ""
         for x, docs in generator:
             text += x
-            elements[0].update_element(text)
-            elements[1].update_element("\n\n".join(docs), streaming=False)
+            chat_box.update_msg(text, 0, streaming=True)
+            chat_box.update_msg("\n\n".join(docs), 1, streaming=False)
         # update the element without focus
-        elements[0].update_element(text, streaming=False)
-        elements[0] = Markdown(text)
+        chat_box.update_msg(text, 0, streaming=False)
     else:
         text, docs = llm.chat(query)
         chat_box.ai_say(

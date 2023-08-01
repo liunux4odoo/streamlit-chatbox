@@ -31,7 +31,7 @@ class Element:
             },
         }
         self._set_default_kwargs()
-        self._element = None
+        self._dg = None
         self._place_holder = None
 
     def _set_default_kwargs(self) -> None:
@@ -40,13 +40,13 @@ class Element:
                 self._kwargs.setdefault(k, v)
 
     def __call__(self) -> st._DeltaGenerator:
-        # assert self._element is None, "Every element can be rendered once only."
+        # assert self._dg is None, "Every element can be rendered once only."
         self._place_holder = st.empty()
         output_method = getattr(self._place_holder, self._output_method)
         assert callable(
             output_method), f"The attribute st.{self._output_mehtod} is not callable."
-        self._element = output_method(*self._args, **self._kwargs)
-        return self._element
+        self._dg = output_method(*self._args, **self._kwargs)
+        return self._dg
 
 
 class OutputElement(Element):
@@ -78,19 +78,17 @@ class OutputElement(Element):
 
     def update_element(
         self,
-        element: Union["OutputElement", str],
+        element: "OutputElement",
         streaming: Optional[bool] = None,
     ) -> st._DeltaGenerator:
         assert self._place_holder is not None, "You must render the element before setting new element."
-        if isinstance(element, str):
-            element = Markdown(element)
-            if streaming is None:
-                streaming = True
-        if streaming and isinstance(element, Markdown):
-            element._content += " ▌"
         with self._place_holder:
-            self._element = element()
-        return self._element
+            self._dg = element()
+        return self._dg
+
+    def attrs_from(self, target):
+        for attr in ["_in_expander", "_expanded", "_title"]:
+            setattr(self, attr, getattr(target, attr))
 
 
 class InputElement(Element):
