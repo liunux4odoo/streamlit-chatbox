@@ -18,6 +18,34 @@ class ChatBox:
     def history(self):
         return st.session_state.get(self._session_name, [])
 
+    def filter_history(
+        self,
+        history_len: int,
+        filter: Callable = None,
+    ) -> List:
+        def default_filter(index, msg):
+            '''
+            filter text messages only with the format {"role":role, "content":content}
+            '''
+            content = [x._content for x in msg["elements"] if x._output_method in ["markdown", "text"]]
+            return {
+                "role": msg["role"],
+                "content": "\n\n".join(content),
+            }
+
+        if filter is None:
+            filter = default_filter
+
+        result = []
+        for msg in self.history[-1::-1]:
+            filtered = filter(msg)
+            if filtered is not None:
+                result.insert(0, filtered)
+                if len(result) >= history_len:
+                    break
+
+        return result
+
     def _prepare_elements(
         self,
         elements: Union[OutputElement, str, List[Union[OutputElement, str]]],

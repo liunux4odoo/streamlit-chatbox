@@ -13,6 +13,8 @@ This package(>=1.0.0) will focus on wrapper of official chat elements to make ch
 A Streamlit component to show chat messages.
 It's basiclly a wrapper of streamlit officeial elements including the chat elemnts.
 
+![demo](https://github.com/liunux4odoo/streamlit-chatbox/blob/master/demo.gif?raw=true)
+
 ## Features
 
 - support streaming output.
@@ -91,9 +93,6 @@ if show_history:
     st.write(chat_box.history)
 
 ```
-
-![demo](https://github.com/liunux4odoo/streamlit-chatbox/blob/master/demo.gif?raw=true)
-
 
 ## Todos
 
