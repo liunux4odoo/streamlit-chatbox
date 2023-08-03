@@ -5,18 +5,34 @@ import time
 class ChatBox:
     def __init__(
         self,
-        session_name: str = "messages",
+        chat_name: str = "default",
+        session_key: str = "messages",
         user_avatar: str = "user",
         assistant_avatar: str = "assistant",
+        greetings: Union[str, OutputElement, List[Union[str, OutputElement]]] = [],
     ) -> None:
-        self._session_name = session_name
+        self._chat_name = chat_name
+        self._session_key = session_key
         self._user_avatar = user_avatar
         self._assistant_avatar = assistant_avatar
-        st.session_state.setdefault(self._session_name, [])
+        if not isinstance(greetings, list):
+            greetings = [greetings]
+        for i, greeting in enumerate(greetings):
+            if isinstance(greeting, str):
+                greetings[i] = Markdown(greeting)
+        self._greetings = greetings
+        st.session_state.setdefault(
+            self._session_key,
+            {self._chat_name: self._greetings},
+        )
+
+    def use_chat_name(self, name: str ="default") -> None:
+        self._chat_name = name
+        self.session_state[self._session_key].setdefault(name, [self._greetings])
 
     @property
-    def history(self):
-        return st.session_state.get(self._session_name, [])
+    def history(self) -> List:
+        return st.session_state.get(self._session_key).get(self._chat_name)
 
     def filter_history(
         self,
@@ -45,6 +61,11 @@ class ChatBox:
                     break
 
         return result
+
+    # def export2md(self, chat_name="default", filter=None):
+    #     lines = []
+    #     for msg in self.history:
+    #         lines.append()
 
     def _prepare_elements(
         self,
