@@ -21,14 +21,18 @@ class ChatBox:
             if isinstance(greeting, str):
                 greetings[i] = Markdown(greeting)
         self._greetings = greetings
-        st.session_state.setdefault(
-            self._session_key,
-            {self._chat_name: self._greetings},
-        )
+
+        if self._session_key not in st.session_state:
+            st.session_state[self._session_key] = {
+                self._chat_name: [{
+                    "role": "assistant",
+                    "elements": self._greetings,
+            }]}
 
     def use_chat_name(self, name: str ="default") -> None:
         self._chat_name = name
-        self.session_state[self._session_key].setdefault(name, [self._greetings])
+        if name not in self.session_state[self._session_key]:
+            self.session_state[self._session_key] = self._greetings
 
     @property
     def history(self) -> List:
