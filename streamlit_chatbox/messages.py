@@ -88,11 +88,13 @@ class ChatBox:
         self,
         elements: Union[OutputElement, str, List[Union[OutputElement, str]]],
         to_history: bool = True,
+        not_render: bool = False,
     ) -> List[OutputElement]:
         elements = self._prepare_elements(elements)
-        with st.chat_message("user", avatar=self._user_avatar):
-            for element in elements:
-                element()
+        if not not_render:
+            with st.chat_message("user", avatar=self._user_avatar):
+                for element in elements:
+                    element()
         if to_history:
             self.history.append({"role": "user", "elements": elements})
         return elements
@@ -101,11 +103,13 @@ class ChatBox:
         self,
         elements: Union[OutputElement, str, List[Union[OutputElement, str]]],
         to_history: bool = True,
+        not_render: bool = False,
     ) -> List[OutputElement]:
         elements = self._prepare_elements(elements)
-        with st.chat_message("assistant", avatar=self._assistant_avatar):
-            for element in elements:
-                element()
+        if not not_render:
+            with st.chat_message("assistant", avatar=self._assistant_avatar):
+                for element in elements:
+                    element()
         if to_history:
             self.history.append({"role": "assistant", "elements": elements})
         return elements
