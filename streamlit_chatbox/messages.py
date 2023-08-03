@@ -22,20 +22,34 @@ class ChatBox:
                 greetings[i] = Markdown(greeting)
         self._greetings = greetings
         if self._session_key not in st.session_state:
+            st.session_state[self._session_key] = {}
             self.reset_history()
 
     def reset_history(self, name=None):
         name = name or self._chat_name
-        st.session_state[self._session_key] = {
+        st.session_state[self._session_key].update({
             name: [{
                 "role": "assistant",
                 "elements": self._greetings,
-        }]}
+        }]})
 
     def use_chat_name(self, name: str ="default") -> None:
         self._chat_name = name
-        if name not in self.session_state[self._session_key]:
-            self.session_state[self._session_key] = self._greetings
+        if name not in st.session_state[self._session_key]:
+            self.reset_history(name)
+
+    def del_chat_name(self, name: str):
+        if name in st.session_state[self._session_key]:
+            msgs = st.session_state[self._session_key].pop(name)
+            self._chat_name=self.get_chat_names()[0]
+        return msgs
+
+    def get_chat_names(self):
+        return list(st.session_state[self._session_key].keys())
+
+    @property
+    def cur_chat_name(self):
+        return self._chat_name
 
     @property
     def history(self) -> List:
