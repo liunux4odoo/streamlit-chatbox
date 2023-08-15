@@ -122,4 +122,6 @@ if show_history:
 
 更多开发进度见:
 
-{% include feature.html id="JLMbpiywVxQ" %}
+{% raw %}
+{% include feature.html %}
+{% endraw %}
