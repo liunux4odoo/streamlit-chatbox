@@ -1,5 +1,6 @@
 from streamlit_chatbox.elements import *
 import time
+import inspect
 
 
 class ChatBox:
@@ -33,6 +34,7 @@ class ChatBox:
             self.reset_history("默认会话")
 
     def reset_history(self, name=None):
+        assert self.chat_inited, "please call init_session first"
         name = name or self._chat_name
         st.session_state[self._session_key].update({name: []})
         if self._greetings:
@@ -42,17 +44,20 @@ class ChatBox:
             }]
 
     def use_chat_name(self, name: str ="默认会话") -> None:
+        assert self.chat_inited, "please call init_session first"
         self._chat_name = name
         if name not in st.session_state[self._session_key]:
             self.reset_history(name)
 
     def del_chat_name(self, name: str):
+        assert self.chat_inited, "please call init_session first"
         if name in st.session_state[self._session_key]:
             msgs = st.session_state[self._session_key].pop(name)
             self._chat_name=self.get_chat_names()[0]
         return msgs
 
     def get_chat_names(self):
+        assert self.chat_inited, "please call init_session first"
         return list(st.session_state[self._session_key].keys())
 
     @property
@@ -61,14 +66,23 @@ class ChatBox:
 
     @property
     def history(self) -> List:
-        return st.session_state.get(self._session_key).get(self._chat_name)
+        assert self.chat_inited, "please call init_session first"
+        return st.session_state[self._session_key].get(self._chat_name, [])
 
     def filter_history(
         self,
-        history_len: int,
+        history_len: int = None,
         filter: Callable = None,
+        stop: Callable = None,
     ) -> List:
-        def default_filter(index, msg):
+    '''
+    history_len: the length of conversation pairs
+    filter: custom filter fucntion with arguments (msg,) or (msg, index), return None if skipping msg. default filter returns all text/markdown content.
+    stop: custom function to stop filtering with arguments (history,) history is already filtered messages, return True if stop. default stop on history_len
+    '''
+        assert self.chat_inited, "please call init_session first"
+
+        def default_filter(msg, index=None):
             '''
             filter text messages only with the format {"role":role, "content":content}
             '''
@@ -78,15 +92,29 @@ class ChatBox:
                 "content": "\n\n".join(content),
             }
 
+        def default_stop(history):
+            if isinstance(history_len, int):
+                ai_count = len(x for x in history if x["role"] == "user")
+                return ai_count >= history_len
+            else:
+                return False
+
         if filter is None:
             filter = default_filter
 
+        if stop is None:
+            stop = default_stop
+
         result = []
-        for msg in self.history[-1::-1]:
-            filtered = filter(msg)
+        args_len = len(inspect.signature(filter).parameters)
+        for i, msg in enumerate(self.history[-1::-1]):
+            if args_len == 1:
+                filtered = filter(msg)
+            else:
+                filtered = filter(msg, i)
             if filtered is not None:
                 result.insert(0, filtered)
-                if len(result) >= history_len:
+                if isinstance(history_len, int) and len(result) >= history_len:
                     break
 
         return result
@@ -101,6 +129,11 @@ class ChatBox:
         ai_bg_color: str = "#E0F7FA",
         callback: Callable = None,
     ) -> List[str]:
+    '''
+    default export messages as table of text.
+    use callback(msg) to custom exported content.
+    '''
+        assert self.chat_inited, "please call init_session first"
         lines = [
             "<style> td, th {border: none!important;}</style>\n"
             "|  |  |\n",
@@ -144,6 +177,7 @@ class ChatBox:
         to_history: bool = True,
         not_render: bool = False,
     ) -> List[OutputElement]:
+        assert self.chat_inited, "please call init_session first"
         elements = self._prepare_elements(elements)
         if not not_render:
             with st.chat_message("user", avatar=self._user_avatar):
@@ -159,6 +193,7 @@ class ChatBox:
         to_history: bool = True,
         not_render: bool = False,
     ) -> List[OutputElement]:
+        assert self.chat_inited, "please call init_session first"
         elements = self._prepare_elements(elements)
         if not not_render:
             with st.chat_message("assistant", avatar=self._assistant_avatar):
@@ -169,6 +204,7 @@ class ChatBox:
         return elements
 
     def output_messages(self):
+        assert self.chat_inited, "please call init_session first"
         for msg in self.history:
             avatar = self._user_avatar if msg["role"] == "user" else self._assistant_avatar
             with st.chat_message(msg["role"], avatar=avatar):
@@ -182,12 +218,14 @@ class ChatBox:
         history_index: int = -1,
         streaming: Optional[bool] = None,
     ) -> st._DeltaGenerator:
+        assert self.chat_inited, "please call init_session first"
         if isinstance(element, str):
             element = Markdown(element)
             if streaming is None:
                 streaming = True
         if streaming and isinstance(element, Markdown):
             element._content += " ▌"
+
         old_element = self.history[history_index]["elements"][element_index]
         dg = old_element.update_element(
             element, streaming
