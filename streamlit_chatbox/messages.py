@@ -31,7 +31,7 @@ class ChatBox:
     def init_session(self):
         if not self.chat_inited:
             st.session_state[self._session_key] = {}
-            self.reset_history("默认会话")
+            self.reset_history(self._chat_name)
 
     def reset_history(self, name=None):
         assert self.chat_inited, "please call init_session first"
@@ -69,17 +69,23 @@ class ChatBox:
         assert self.chat_inited, "please call init_session first"
         return st.session_state[self._session_key].get(self._chat_name, [])
 
+    def other_history(self, chat_name: str, default: List=[]) -> Optional[List]:
+        assert self.chat_inited, "please call init_session first"
+        chat_name = chat_name or self.cur_chat_name()
+        return st.session_state[self._session_key].get(chat_name, default)
+
     def filter_history(
         self,
         history_len: int = None,
         filter: Callable = None,
         stop: Callable = None,
+        chat_name: str = None,
     ) -> List:
-    '''
-    history_len: the length of conversation pairs
-    filter: custom filter fucntion with arguments (msg,) or (msg, index), return None if skipping msg. default filter returns all text/markdown content.
-    stop: custom function to stop filtering with arguments (history,) history is already filtered messages, return True if stop. default stop on history_len
-    '''
+        '''
+        history_len: the length of conversation pairs
+        filter: custom filter fucntion with arguments (msg,) or (msg, index), return None if skipping msg. default filter returns all text/markdown content.
+        stop: custom function to stop filtering with arguments (history,) history is already filtered messages, return True if stop. default stop on history_len
+        '''
         assert self.chat_inited, "please call init_session first"
 
         def default_filter(msg, index=None):
@@ -107,7 +113,8 @@ class ChatBox:
 
         result = []
         args_len = len(inspect.signature(filter).parameters)
-        for i, msg in enumerate(self.history[-1::-1]):
+        history = self.other_history(chat_name)
+        for i, msg in enumerate(history[-1::-1]):
             if args_len == 1:
                 filtered = filter(msg)
             else:
@@ -121,7 +128,7 @@ class ChatBox:
 
     def export2md(
         self,
-        chat_name: str = "默认会话",
+        chat_name: str = None,
         filter: Callable = None,
         user_avatar: str = "User",
         ai_avatar: str = "AI",
@@ -129,10 +136,10 @@ class ChatBox:
         ai_bg_color: str = "#E0F7FA",
         callback: Callable = None,
     ) -> List[str]:
-    '''
-    default export messages as table of text.
-    use callback(msg) to custom exported content.
-    '''
+        '''
+        default export messages as table of text.
+        use callback(msg) to custom exported content.
+        '''
         assert self.chat_inited, "please call init_session first"
         lines = [
             "<style> td, th {border: none!important;}</style>\n"
@@ -143,7 +150,8 @@ class ChatBox:
             text = text.replace("\n", "<br>")
             return f"<div style=\"background-color:{bg_color}\">{text}</div>"
 
-        for msg in self.history:
+        history = self.other_history(chat_name)
+        for msg in history:
             if callable(callback):
                 line = callback(msg)
             else:
@@ -157,6 +165,61 @@ class ChatBox:
                 line = f"|{avatar}|{content}|\n"
             lines.append(line)
         return lines
+
+    def to_dict(
+        self,
+    ) -> Dict:
+        '''
+        export current state to dict
+        '''
+        assert self.chat_inited, "please call init_session first"
+
+        def p(val):
+            if isinstance(val, (list, tuple)):
+                return [p(x) for x in val]
+            elif isinstance(val, dict):
+                return {k: p(v) for k, v in val.items()}
+            elif isinstance(val, OutputElement):
+                return val.to_dict()
+            else:
+                return val
+
+        histories = {x: p(self.other_history(x)) for x in self.get_chat_names()}
+        return {
+            "cur_chat_name": self.cur_chat_name(),
+            "session_key": self._session_key,
+            "user_avatar": self._user_avatar,
+            "assistant_avatar": self._assistant_avatar,
+            "greetings": p(self._greetings),
+            "histories": histories,
+        }
+
+    @classmethod
+    def from_dict(
+        cls,
+        data: Dict,
+    ) -> "ChatBox":
+        '''
+        load state from dict
+        '''
+        obj = cls(
+            chat_name=data["cur_chat_name"],
+            session_key=data["session_key"],
+            user_avatar=data["user_avatar"],
+            assistant_avatar=data["assistant_avatar"],
+            greetings=[OutputElement.from_dict(x) for x in data["greetings"]],
+        )
+        for name, history in data["histories"].items():
+            obj.reset_history(name)
+            for h in history:
+                msg = {
+                    "role": h["role"],
+                    "elements": [OutputElement.from_dict(y) for y in h["elements"]],
+                    }
+                obj.other_history(name).append(msg)
+
+        obj.use_chat_name(data["cur_chat_name"])
+        return obj
 
     def _prepare_elements(
         self,

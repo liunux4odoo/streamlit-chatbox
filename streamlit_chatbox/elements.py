@@ -76,6 +76,35 @@ class OutputElement(Element):
         method = self._output_method.capitalize()
         return f"{method} Element:\n{self._content}"
 
+    def to_dict(self) -> Dict:
+        return {
+            "content": self._content,
+            "output_method": self._output_method,
+            "title": self._title,
+            "in_expander": self._in_expander,
+            "expanded": self._expanded,
+            "kwargs": self._kwargs,
+        }
+
+    @classmethod
+    def from_dict(cls, d: Dict) -> "OutputElement":
+        cls_maps = {
+            "markdown": Markdown,
+            "image": Image,
+            "audio": Audio,
+            "video": Video,
+        }
+
+        factory_cls = cls_maps.get(d.get("output_method"), cls)
+        return factory_cls(
+            content=d.get("content"),
+            output_method=d.get("output_method"),
+            title=d.get("title"),
+            in_expander=d.get("in_expander"),
+            expanded=d.get("expanded"),
+            **d.get("kwargs", {}),
+        )
+
     def update_element(
         self,
         element: "OutputElement",
