@@ -3,12 +3,13 @@ from pathlib import Path
 
 
 def readme():
-    return Path(__file__).parent.absolute().joinpath('README.md').read_text()
+    readme = Path(__file__).parent.absolute().joinpath('README.md')
+    return readme.read_text("utf-8")
 
 
 setuptools.setup(
     name='streamlit-chatbox',
-    version='1.1.6',
+    version='1.1.7',
     author='liunux',
     author_email='liunux@qq.com',
     description='A chat box and some helpful tools used to build chatbot app with streamlit',
@@ -21,5 +22,6 @@ setuptools.setup(
     python_requires='>=3.8',
     install_requires=[
         'streamlit>=1.24.0',
+        'simplejson',
     ]
 )

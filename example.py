@@ -1,10 +1,12 @@
 import streamlit as st
 from streamlit_chatbox import *
 import time
+import simplejson as json
 
 
 llm = FakeLLM()
 chat_box = ChatBox()
+
 
 with st.sidebar:
     st.subheader('start to chat using streamlit')
@@ -12,6 +14,21 @@ with st.sidebar:
     in_expander = st.checkbox('show messages in expander', True)
     show_history = st.checkbox('show history', False)
 
+    st.divider()
+
+    btns = st.container()
+
+    file = st.file_uploader(
+        "chat history json",
+        type=["json"]
+    )
+
+    if st.button("Load Json") and file:
+        data = json.load(file)
+        chat_box.from_dict(data)
+
+
+chat_box.init_session()
 chat_box.output_messages()
 
 if query := st.chat_input('input your question here'):
@@ -54,6 +71,26 @@ if st.button('show me the multimedia'):
     time.sleep(0.5)
     chat_box.ai_say(
         Audio('https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4'))
+
+
+btns.download_button(
+    "Export Markdown",
+    "".join(chat_box.export2md()),
+    file_name=f"chat_history.md",
+    mime="text/markdown",
+)
+
+btns.download_button(
+    "Export Json",
+    chat_box.to_json(),
+    file_name="chat_history.json",
+    mime="text/json",
+)
+
+if btns.button("clear history"):
+    chat_box.init_session(clear=True)
+    st.experimental_rerun()
+
 
 if show_history:
     st.write(chat_box.history)

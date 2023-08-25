@@ -7,7 +7,7 @@ import simplejson as json
 class ChatBox:
     def __init__(
         self,
-        chat_name: str = "默认会话",
+        chat_name: str = "default",
         session_key: str = "messages",
         user_avatar: str = "user",
         assistant_avatar: str = "assistant",
@@ -29,8 +29,8 @@ class ChatBox:
     def chat_inited(self):
         return self._session_key in st.session_state
 
-    def init_session(self):
-        if not self.chat_inited:
+    def init_session(self, clear: bool =False):
+        if not self.chat_inited or clear:
             st.session_state[self._session_key] = {}
             self.reset_history(self._chat_name)
 
@@ -44,7 +44,7 @@ class ChatBox:
                     "elements": self._greetings,
             }]
 
-    def use_chat_name(self, name: str ="默认会话") -> None:
+    def use_chat_name(self, name: str ="default") -> None:
         assert self.chat_inited, "please call init_session first"
         self._chat_name = name
         if name not in st.session_state[self._session_key]:
@@ -72,7 +72,7 @@ class ChatBox:
 
     def other_history(self, chat_name: str, default: List=[]) -> Optional[List]:
         assert self.chat_inited, "please call init_session first"
-        chat_name = chat_name or self.cur_chat_name()
+        chat_name = chat_name or self.cur_chat_name
         return st.session_state[self._session_key].get(chat_name, default)
 
     def filter_history(
@@ -187,7 +187,7 @@ class ChatBox:
 
         histories = {x: p(self.other_history(x)) for x in self.get_chat_names()}
         return {
-            "cur_chat_name": self.cur_chat_name(),
+            "cur_chat_name": self.cur_chat_name,
             "session_key": self._session_key,
             "user_avatar": self._user_avatar,
             "assistant_avatar": self._assistant_avatar,
@@ -200,37 +200,36 @@ class ChatBox:
         pretty: bool = True,
     ) -> str:
         data = self.to_dict()
-        kwargs = {"ensure_ascci": False}
+        kwargs = {"ensure_ascii": False}
         if pretty:
             kwargs["indent"] = 2
         return json.dumps(data, **kwargs)
 
-    @classmethod
     def from_dict(
-        cls,
+        self,
         data: Dict,
     ) -> "ChatBox":
         '''
         load state from dict
         '''
-        obj = cls(
-            chat_name=data["cur_chat_name"],
-            session_key=data["session_key"],
-            user_avatar=data["user_avatar"],
-            assistant_avatar=data["assistant_avatar"],
-            greetings=[OutputElement.from_dict(x) for x in data["greetings"]],
-        )
+        self._chat_name=data["cur_chat_name"]
+        self._session_key=data["session_key"]
+        self._user_avatar=data["user_avatar"]
+        self._assistant_avatar=data["assistant_avatar"]
+        self._greetings=[OutputElement.from_dict(x) for x in data["greetings"]]
+        self.init_session(clear=True)
+
         for name, history in data["histories"].items():
-            obj.reset_history(name)
+            self.reset_history(name)
             for h in history:
                 msg = {
                     "role": h["role"],
                     "elements": [OutputElement.from_dict(y) for y in h["elements"]],
                     }
-                obj.other_history(name).append(msg)
+                self.other_history(name).append(msg)
 
-        obj.use_chat_name(data["cur_chat_name"])
-        return obj
+        self.use_chat_name(data["cur_chat_name"])
+        return self
 
     def _prepare_elements(
         self,

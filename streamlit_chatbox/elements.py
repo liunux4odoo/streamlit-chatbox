@@ -96,14 +96,17 @@ class OutputElement(Element):
         }
 
         factory_cls = cls_maps.get(d.get("output_method"), cls)
-        return factory_cls(
+        kwargs = dict(
             content=d.get("content"),
-            output_method=d.get("output_method"),
             title=d.get("title"),
             in_expander=d.get("in_expander"),
             expanded=d.get("expanded"),
             **d.get("kwargs", {}),
-        )
+            )
+        if factory_cls is cls:
+            kwargs["output_method"] = d.get("output_method")
+
+        return factory_cls(**kwargs)
 
     def update_element(
         self,
