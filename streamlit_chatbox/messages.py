@@ -1,6 +1,7 @@
 from streamlit_chatbox.elements import *
 import time
 import inspect
+import simplejson as json
 
 
 class ChatBox:
@@ -193,6 +194,16 @@ class ChatBox:
             "greetings": p(self._greetings),
             "histories": histories,
         }
+
+    def to_json(
+        self,
+        pretty: bool = True,
+    ) -> str:
+        data = self.to_dict()
+        kwargs = {"ensure_ascci": False}
+        if pretty:
+            kwargs["indent"] = 2
+        return json.dumps(data, **kwargs)
 
     @classmethod
     def from_dict(
