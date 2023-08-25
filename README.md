@@ -24,7 +24,7 @@ It's basiclly a wrapper of streamlit officeial elements including the chat elemn
 
 This make it easy to chat with langchain LLMs in streamlit.
 
-Goto [webui.py](https://github.com/chatchat-space/Langchain-Chatchat/blob/master/webui_pages/dialogue/dialogue.py) of [langchain-chatchat](https://github.com/chatchat-space/Langchain-Chatchat) to see the actual application.
+Goto [webui](https://github.com/chatchat-space/Langchain-Chatchat/blob/master/webui_pages/dialogue/dialogue.py) of [langchain-chatchat](https://github.com/chatchat-space/Langchain-Chatchat) to see the actual application.
 
 
 ## Install
