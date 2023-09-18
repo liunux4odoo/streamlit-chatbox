@@ -13,7 +13,8 @@ This package(>=1.0.0) will focus on wrapper of official chat elements to make ch
 A Streamlit component to show chat messages.
 It's basiclly a wrapper of streamlit officeial elements including the chat elemnts.
 
-![demo](https://github.com/liunux4odoo/streamlit-chatbox/blob/master/demo.gif?raw=true)
+![](demo.gif)
+![](demo_agent.gif)
 
 ## Features
 
@@ -83,10 +84,10 @@ if query := st.chat_input('input your question here'):
         text = ""
         for x, docs in generator:
             text += x
-            chat_box.update_msg(text, 0, streaming=True)
-            chat_box.update_msg("\n\n".join(docs), 1, streaming=False)
+            chat_box.update_msg(text, element_index=0, streaming=True)
         # update the element without focus
-        chat_box.update_msg(text, 0, streaming=False)
+        chat_box.update_msg(text, element_index=0, streaming=False, state="complete")
+        chat_box.update_msg("\n\n".join(docs), element_index=1, streaming=False, state="complete")
     else:
         text, docs = llm.chat(query)
         chat_box.ai_say(
@@ -98,7 +99,8 @@ if query := st.chat_input('input your question here'):
             ]
         )
 
-if st.button('show me the multimedia'):
+cols = st.columns(2)
+if cols[0].button('show me the multimedia'):
     chat_box.ai_say(Image(
         'https://tse4-mm.cn.bing.net/th/id/OIP-C.cy76ifbr2oQPMEs2H82D-QHaEv?w=284&h=181&c=7&r=0&o=5&dpr=1.5&pid=1.7'))
     time.sleep(0.5)
@@ -108,6 +110,29 @@ if st.button('show me the multimedia'):
     chat_box.ai_say(
         Audio('https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4'))
 
+if cols[1].button('run agent'):
+    chat_box.user_say('run agent')
+    agent = FakeAgent()
+    text = ""
+
+    if streaming:
+    # streaming:
+    chat_box.ai_say() # generate a blank placeholder to render messages
+    for d in agent.run_stream():
+        if d["type"] == "complete":
+            chat_box.update_msg(expanded=False, state="complete")
+            chat_box.insert_msg(d["llm_output"])
+            break
+
+        if d["status"] == 1:
+            chat_box.update_msg(expanded=False, state="complete")
+            text = ""
+            chat_box.insert_msg(Markdown(text, title=d["text"], in_expander=True, expanded=True))
+        elif d["status"] == 2:
+            text += d["llm_output"]
+            chat_box.update_msg(text, streaming=True)
+        else:
+            chat_box.update_msg(text, streaming=False)
 
 btns.download_button(
     "Export Markdown",
@@ -130,7 +155,6 @@ if btns.button("clear history"):
 
 if show_history:
     st.write(chat_box.history)
-
 ```
 
 ## Todos
@@ -160,3 +184,5 @@ if show_history:
 	- [x] export to markdown
 	- [x] export to json
     - [x] import json
+
+- [x] support output of langchain' Agent.

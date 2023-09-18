@@ -14,6 +14,7 @@ __all__ = [
     "Video",
     "OutputElement",
     "FakeLLM",
+    "FakeAgent",
 ]
 
 
