@@ -13,7 +13,10 @@ This package(>=1.0.0) will focus on wrapper of official chat elements to make ch
 A Streamlit component to show chat messages.
 It's basiclly a wrapper of streamlit officeial elements including the chat elemnts.
 
+- demo
 ![](demo.gif)
+
+- demo agent
 ![](demo_agent.gif)
 
 ## Features
@@ -115,7 +118,6 @@ if cols[1].button('run agent'):
     agent = FakeAgent()
     text = ""
 
-    if streaming:
     # streaming:
     chat_box.ai_say() # generate a blank placeholder to render messages
     for d in agent.run_stream():

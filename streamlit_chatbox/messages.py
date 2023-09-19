@@ -117,7 +117,7 @@ class ChatBox:
 
         def default_stop(history):
             if isinstance(history_len, int):
-                user_count = len(x for x in history if x["role"] == "user")
+                user_count = len([x for x in history if x["role"] == "user"])
                 return user_count >= history_len
             else:
                 return False

@@ -1,9 +1,10 @@
 from typing import *
-import streamlit as st
-import time
 # from streamlit_option_menu import option_menu
 import asyncio
 from .messages import *
+
+
+__version__ = "1.1.9"
 
 
 __all__ = [
