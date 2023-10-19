@@ -115,9 +115,9 @@ class ChatBox:
                 "content": "\n\n".join(content),
             }
 
-        def default_stop(history):
+        def default_stop(r):
             if isinstance(history_len, int):
-                user_count = len([x for x in history if x["role"] == "user"])
+                user_count = len([x for x in r if x["role"] == "user"])
                 return user_count >= history_len
             else:
                 return False
@@ -131,16 +131,16 @@ class ChatBox:
         result = []
         args_len = len(inspect.signature(filter).parameters)
         history = self.other_history(chat_name)
+
         for i, msg in enumerate(history[-1::-1]):
+            if stop(result):
+                break
             if args_len == 1:
                 filtered = filter(msg)
             else:
                 filtered = filter(msg, i)
             if filtered is not None:
                 result.insert(0, filtered)
-
-            if stop(history):
-                break
 
         return result
 
