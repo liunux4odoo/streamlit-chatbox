@@ -1,4 +1,5 @@
 from streamlit_chatbox.elements import *
+from streamlit_feedback import streamlit_feedback
 import time
 import inspect
 import simplejson as json
@@ -13,6 +14,12 @@ import simplejson as json
 #       - in_exapander decides the element is rendered directly or in st.status
 #           - if directly: element is rendered in a st.empty in the st.container
 #           - if in expander: element is rendered in a st.empty in the st.status
+
+
+POSSIBLE_SCORES = {
+    "thumbs": ["👍", "👎"],
+    "faces": ["😞", "🙁", "😐", "🙂", "😀"],
+}
 
 
 class ChatBox:
@@ -290,19 +297,44 @@ class ChatBox:
         for element in elements:
             element(render_to=container)
 
-        self.history.append({"role": "assistant", "elements": elements, "metadata": metadata})
+        self.history.append({"role": "assistant", "elements": elements, "metadata": metadata.copy()})
         return elements
+
+    def show_feedback(self, history_index=-1, **kwargs):
+        '''
+        render feedback component
+        '''
+        with self._chat_containers[history_index]:
+            self.history[history_index]["metadata"]["feedback_kwargs"] = kwargs
+            return streamlit_feedback(**kwargs)
+
+    def set_feedback(self, feedback: Dict, history_index=-1) -> int:
+        '''
+        set the feedback state for msg with a index of history_index
+        return the index of streamlit_feedback's emoji score
+        '''
+        self.history[history_index]["metadata"]["feedback"] = feedback
+        score = feedback.get("score")
+        for v in POSSIBLE_SCORES.values():
+            if score in v:
+                return v.index(score)
 
     def output_messages(self):
         self.init_session()
         self._chat_containers = []
-        for msg in self.history:
+        for i, msg in enumerate(self.history):
             avatar = self._user_avatar if msg["role"] == "user" else self._assistant_avatar
             chat_ele = st.chat_message(msg["role"], avatar=avatar)
             container = chat_ele.container()
             self._chat_containers.append(container)
             for element in msg["elements"]:
                 element(render_to=container)
+
+            feedback_kwargs = msg["metadata"].get("feedback_kwargs", {})
+            if feedback_kwargs:
+                if feedback := msg["metadata"].get("feedback"):
+                    feedback_kwargs["disable_with_score"] = feedback["score"]
+                self.show_feedback(history_index=i, **feedback_kwargs)
 
     def update_msg(
         self,
@@ -314,6 +346,7 @@ class ChatBox:
         title: str = None,
         expanded: bool = None,
         state: bool = None,
+        metadata: Dict = {},
     ) -> st._DeltaGenerator:
         self.init_session()
         if not self.history or not self.history[history_index]["elements"]:
@@ -330,6 +363,8 @@ class ChatBox:
         if element is not None:
             element.status_from(old_element)
             self.history[history_index]["elements"][element_index] = element
+
+        self.history[history_index]["metadata"].update(metadata)
 
         dg = old_element.update_element(
             element,

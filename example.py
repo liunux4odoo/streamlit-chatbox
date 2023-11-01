@@ -31,6 +31,22 @@ with st.sidebar:
 chat_box.init_session()
 chat_box.output_messages()
 
+def on_feedback(
+    feedback,
+    chat_history_id: str = "",
+    history_index: int = -1,
+):
+    reason = feedback["text"]
+    score_int = chat_box.set_feedback(feedback=feedback, history_index=history_index) # convert emoji to integer
+    # do something
+    st.session_state["need_rerun"] = True
+
+
+feedback_kwargs = {
+    "feedback_type": "thumbs",
+    "optional_text_label": "欢迎反馈您打分的理由",
+}
+
 if query := st.chat_input('input your question here'):
     chat_box.user_say(query)
     if streaming:
@@ -51,6 +67,11 @@ if query := st.chat_input('input your question here'):
         # update the element without focus
         chat_box.update_msg(text, element_index=0, streaming=False, state="complete")
         chat_box.update_msg("\n\n".join(docs), element_index=1, streaming=False, state="complete")
+        chat_history_id = "some id"
+        chat_box.show_feedback(**feedback_kwargs,
+                                key=chat_history_id,
+                                on_submit=on_feedback,
+                                kwargs={"chat_history_id": chat_history_id, "history_index": len(chat_box.history) - 1})
     else:
         text, docs = llm.chat(query)
         chat_box.ai_say(

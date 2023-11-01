@@ -181,6 +181,7 @@ if show_history:
 	- [x] streaming output message
 	- [x] show message in expander
 	- [ ] style the output message
+    - [x] feedback by user
 
 - [x] export & import chat history
 	- [x] export to markdown
