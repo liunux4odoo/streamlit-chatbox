@@ -248,6 +248,7 @@ class ChatBox:
                 msg = {
                     "role": h["role"],
                     "elements": [OutputElement.from_dict(y) for y in h["elements"]],
+                    "metadata": h["metadata"],
                     }
                 self.other_history(name).append(msg)
 
