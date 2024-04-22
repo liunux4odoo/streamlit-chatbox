@@ -22,6 +22,23 @@ POSSIBLE_SCORES = {
 }
 
 
+class AttrDict(dict):
+    def __getattr__(self, key: str) -> Any:
+        try:
+            return self[key]
+        except KeyError:
+            raise AttributeError(key)
+
+    def __setattr__(self, key: str, value: Any) -> None:
+        self[key] = value
+
+    def __delattr__(self, key: str) -> None:
+        try:
+            del self[key]
+        except KeyError:
+            raise AttributeError(key)
+
+
 class ChatBox:
     def __init__(
         self,
@@ -54,24 +71,32 @@ class ChatBox:
             time.sleep(0.1)
             self.reset_history(self._chat_name)
 
-    def reset_history(self, name=None):
+    def reset_history(self, name: str = None):
         if not self.chat_inited:
             st.session_state[self._session_key] = {}
 
-        name = name or self._chat_name
-        st.session_state[self._session_key][name] = []
+        name = name or self.cur_chat_name
+        st.session_state[self._session_key][name] = {"history": [], "context": AttrDict()}
         if self._greetings:
-            st.session_state[self._session_key][name] = [{
+            st.session_state[self._session_key][name]["history"] = [{
                     "role": "assistant",
                     "elements": self._greetings,
                     "metadata": {},
             }]
 
-    def use_chat_name(self, name: str ="default") -> None:
+    def use_chat_name(self, name: str = "default") -> None:
         self.init_session()
         self._chat_name = name
         if name not in st.session_state[self._session_key]:
             self.reset_history(name)
+
+    def change_chat_name(self, new_name: str, origin_name: str = None) -> bool:
+        self.init_session()
+        origin_name = origin_name or self.cur_chat_name
+        if (origin_name in st.session_state[self._session_key]
+            and new_name not in st.session_state[self._session_key]):
+            st.session_state[self._session_key][new_name] = st.session_state[self._session_key].pop(origin_name)
+            self._chat_name = new_name
 
     def del_chat_name(self, name: str):
         self.init_session()
@@ -89,14 +114,47 @@ class ChatBox:
         return self._chat_name
 
     @property
+    def context(self) -> AttrDict:
+        self.init_session()
+        return st.session_state[self._session_key].get(self._chat_name, {}).get("context", AttrDict())
+
+    @property
     def history(self) -> List:
         self.init_session()
-        return st.session_state[self._session_key].get(self._chat_name, [])
+        return st.session_state[self._session_key].get(self._chat_name, {}).get("history", [])
 
     def other_history(self, chat_name: str, default: List=[]) -> Optional[List]:
         self.init_session()
         chat_name = chat_name or self.cur_chat_name
-        return st.session_state[self._session_key].get(chat_name, default)
+        return st.session_state[self._session_key].get(chat_name, {}).get("history", default)
+
+    def other_context(self, chat_name: str, default: AttrDict=AttrDict()) -> AttrDict:
+        self.init_session()
+        chat_name = chat_name or self.cur_chat_name
+        return st.session_state[self._session_key].get(chat_name, {}).get("context", default)
+
+    def context_to_session(self, chat_name: str=None, include: List[str]=[], exclude: List[str]=[]) -> None:
+        '''
+        copy context to st.session_state.
+        copy named variables only if `kw` specified
+        this can be usefull to restore session_state when you switch between chat conversations
+        '''
+        for k, v in self.other_context(chat_name).items():
+            if (not include or k in include
+                and k not in exclude):
+                st.session_state[k] = v
+
+    def context_from_session(self, chat_name: str=None, include: List[str]=[], exclude: List[str]=[]) -> None:
+        '''
+        copy context from st.session_state.
+        copy named variables only if `kw` specified
+        this can be usefull to save session_state when you switch between chat conversations
+        '''
+        for k, v in st.session_state.items():
+            if ((not include or k in include)
+                and k not in exclude
+                and k != self._session_key):
+                self.other_context(chat_name)[k] = v
 
     def filter_history(
         self,
@@ -194,7 +252,7 @@ class ChatBox:
         self,
     ) -> Dict:
         '''
-        export current state to dict
+        export current state including messages and context to dict
         '''
         self.init_session()
 
@@ -208,7 +266,7 @@ class ChatBox:
             else:
                 return val
 
-        histories = {x: p(self.other_history(x)) for x in self.get_chat_names()}
+        histories = {x: p({"history": self.other_history(x), "context": self.other_context(x)}) for x in self.get_chat_names()}
         return {
             "cur_chat_name": self.cur_chat_name,
             "session_key": self._session_key,
@@ -246,11 +304,12 @@ class ChatBox:
             self.reset_history(name)
             for h in history:
                 msg = {
-                    "role": h["role"],
-                    "elements": [OutputElement.from_dict(y) for y in h["elements"]],
-                    "metadata": h["metadata"],
+                    "role": h["history"]["role"],
+                    "elements": [OutputElement.from_dict(y) for y in h["history"]["elements"]],
+                    "metadata": h["history"]["metadata"],
                     }
                 self.other_history(name).append(msg)
+                self.other_context(name).update(h["context"])
 
         self.use_chat_name(data["cur_chat_name"])
         return self
@@ -348,7 +407,7 @@ class ChatBox:
         expanded: bool = None,
         state: bool = None,
         metadata: Dict = {},
-    ) -> st._DeltaGenerator:
+    ) -> DeltaGenerator:
         self.init_session()
         if not self.history or not self.history[history_index]["elements"]:
             return

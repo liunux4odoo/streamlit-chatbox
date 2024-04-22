@@ -6,13 +6,21 @@ import simplejson as json
 
 llm = FakeLLM()
 chat_box = ChatBox()
+chat_box.use_chat_name("chat1") # add a chat conversatoin
+
+def on_chat_change():
+    chat_box.use_chat_name(st.session_state["chat_name"])
+    chat_box.context_to_session() # restore widget values to st.session_state when chat name changed
 
 
 with st.sidebar:
     st.subheader('start to chat using streamlit')
-    streaming = st.checkbox('streaming', True)
-    in_expander = st.checkbox('show messages in expander', True)
-    show_history = st.checkbox('show history', False)
+    chat_name = st.selectbox("Chat Session:", ["default", "chat1"], key="chat_name", on_change=on_chat_change)
+    chat_box.use_chat_name(chat_name)
+    streaming = st.checkbox('streaming', key="streaming")
+    in_expander = st.checkbox('show messages in expander', key="in_expander")
+    show_history = st.checkbox('show session state', key="show_history")
+    chat_box.context_from_session(exclude=["chat_name"]) # save widget values to chat context
 
     st.divider()
 
@@ -44,7 +52,7 @@ def on_feedback(
 
 feedback_kwargs = {
     "feedback_type": "thumbs",
-    "optional_text_label": "欢迎反馈您打分的理由",
+    "optional_text_label": "wellcome to feedback",
 }
 
 if query := st.chat_input('input your question here'):
@@ -137,4 +145,4 @@ if btns.button("clear history"):
 
 
 if show_history:
-    st.write(chat_box.history)
+    st.write(st.session_state)

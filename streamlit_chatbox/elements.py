@@ -1,5 +1,6 @@
 from typing import *
 import streamlit as st
+from streamlit.delta_generator import DeltaGenerator
 # from pydantic import BaseModel, Field
 
 
@@ -40,7 +41,7 @@ class Element:
             for k, v in default.items():
                 self._kwargs.setdefault(k, v)
 
-    def __call__(self, render_to: st._DeltaGenerator=None) -> st._DeltaGenerator:
+    def __call__(self, render_to: DeltaGenerator=None) -> DeltaGenerator:
         # assert self._dg is None, "Every element can be rendered once only."
         render_to = render_to or st
         self._place_holder = render_to.empty()
@@ -51,11 +52,11 @@ class Element:
         return self._dg
 
     @property
-    def dg(self) -> st._DeltaGenerator:
+    def dg(self) -> DeltaGenerator:
         return self._dg
 
     @property
-    def place_holder(self) -> st._DeltaGenerator:
+    def place_holder(self) -> DeltaGenerator:
         return self._place_holder
 
     @property
@@ -132,7 +133,7 @@ class OutputElement(Element):
 
         return factory_cls(**kwargs)
 
-    def __call__(self, render_to: st._DeltaGenerator=None, direct: bool=False) -> st._DeltaGenerator:
+    def __call__(self, render_to: DeltaGenerator=None, direct: bool=False) -> DeltaGenerator:
         if render_to is None:
             if self._place_holder is None:
                 self._place_holder = st.empty()
@@ -158,7 +159,7 @@ class OutputElement(Element):
         title: str = None,
         expanded: bool = None,
         state: bool = None,
-    ) -> st._DeltaGenerator:
+    ) -> DeltaGenerator:
         assert self.place_holder is not None, f"You must render the element {self} before setting new element."
         attrs = {}
         if title is not None:

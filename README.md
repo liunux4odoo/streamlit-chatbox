@@ -24,6 +24,7 @@ It's basiclly a wrapper of streamlit officeial elements including the chat elemn
 - support streaming output.
 - support markdown/image/video/audio messages, and all streamlit elements could be supported by customized `OutputElement`.
 - output multiple messages at once, and make them collapsable.
+- maintain session state context bound to chat conversation
 - export & import chat histories
 
 This make it easy to chat with langchain LLMs in streamlit.
@@ -46,13 +47,21 @@ import simplejson as json
 
 llm = FakeLLM()
 chat_box = ChatBox()
+chat_box.use_chat_name("chat1") # add a chat conversatoin
+
+def on_chat_change():
+    chat_box.use_chat_name(st.session_state["chat_name"])
+    chat_box.context_to_session() # restore widget values to st.session_state when chat name changed
 
 
 with st.sidebar:
     st.subheader('start to chat using streamlit')
-    streaming = st.checkbox('streaming', True)
-    in_expander = st.checkbox('show messages in expander', True)
-    show_history = st.checkbox('show history', False)
+    chat_name = st.selectbox("Chat Session:", ["default", "chat1"], key="chat_name", on_change=on_chat_change)
+    chat_box.use_chat_name(chat_name)
+    streaming = st.checkbox('streaming', key="streaming")
+    in_expander = st.checkbox('show messages in expander', key="in_expander")
+    show_history = st.checkbox('show session state', key="show_history")
+    chat_box.context_from_session(exclude=["chat_name"]) # save widget values to chat context
 
     st.divider()
 
@@ -70,6 +79,22 @@ with st.sidebar:
 
 chat_box.init_session()
 chat_box.output_messages()
+
+def on_feedback(
+    feedback,
+    chat_history_id: str = "",
+    history_index: int = -1,
+):
+    reason = feedback["text"]
+    score_int = chat_box.set_feedback(feedback=feedback, history_index=history_index) # convert emoji to integer
+    # do something
+    st.session_state["need_rerun"] = True
+
+
+feedback_kwargs = {
+    "feedback_type": "thumbs",
+    "optional_text_label": "wellcome to feedback",
+}
 
 if query := st.chat_input('input your question here'):
     chat_box.user_say(query)
@@ -91,6 +116,11 @@ if query := st.chat_input('input your question here'):
         # update the element without focus
         chat_box.update_msg(text, element_index=0, streaming=False, state="complete")
         chat_box.update_msg("\n\n".join(docs), element_index=1, streaming=False, state="complete")
+        chat_history_id = "some id"
+        chat_box.show_feedback(**feedback_kwargs,
+                                key=chat_history_id,
+                                on_submit=on_feedback,
+                                kwargs={"chat_history_id": chat_history_id, "history_index": len(chat_box.history) - 1})
     else:
         text, docs = llm.chat(query)
         chat_box.ai_say(
@@ -156,7 +186,8 @@ if btns.button("clear history"):
 
 
 if show_history:
-    st.write(chat_box.history)
+    st.write(st.session_state)
+
 ```
 
 ## Todos
@@ -189,3 +220,14 @@ if show_history:
     - [x] import json
 
 - [x] support output of langchain' Agent.
+- [x] conext bound to chat
+
+# changelog
+
+## v1.1.12
+- fix type hint error with streamlit >= 1.33.0 (#8)
+- add ChatBox.change_chat_name to rename a chat conversation
+- maintain a context bound to chat conversation, it is like to be a sub session_state for every chat, context will get changed when you switch chat names.
+    - user can save chat bound values by `ChatBox.context['x'] = 1`
+    - values of widgets specified with a key can be saved to chat context with `ChatBox.context_from_session` and restored to st.session_state by `ChatBox.context_to_session`
+
