@@ -71,12 +71,15 @@ class ChatBox:
             time.sleep(0.1)
             self.reset_history(self._chat_name)
 
-    def reset_history(self, name: str = None):
+    def reset_history(self, name: str = None, keep_context: bool = True):
         if not self.chat_inited:
             st.session_state[self._session_key] = {}
 
         name = name or self.cur_chat_name
-        st.session_state[self._session_key][name] = {"history": [], "context": AttrDict()}
+        if keep_context:
+            st.session_state[self._session_key][name]["history"] = []
+        else:
+            st.session_state[self._session_key][name] = {"history": [], "context": AttrDict()}
         if self._greetings:
             st.session_state[self._session_key][name]["history"] = [{
                     "role": "assistant",

@@ -4,7 +4,7 @@ import asyncio
 from .messages import *
 
 
-__version__ = "1.1.12.post2"
+__version__ = "1.1.12.post3"
 
 
 __all__ = [
