@@ -77,9 +77,10 @@ class ChatBox:
 
         name = name or self.cur_chat_name
         if keep_context:
-            st.session_state[self._session_key][name]["history"] = []
+            context = st.session_state[self._session_key].get(name, {}).get("context", AttrDict())
         else:
-            st.session_state[self._session_key][name] = {"history": [], "context": AttrDict()}
+            context = AttrDict()
+        st.session_state[self._session_key][name] = {"history": [], "context": context}
         if self._greetings:
             st.session_state[self._session_key][name]["history"] = [{
                     "role": "assistant",
