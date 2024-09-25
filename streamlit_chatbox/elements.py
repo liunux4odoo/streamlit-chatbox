@@ -1,13 +1,32 @@
+import json
 from typing import *
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
+import uuid
 # from pydantic import BaseModel, Field
+
+
+CUSTOM_OUTPUT_METHODS = {}
 
 
 class Element:
     '''
     wrapper of streamlit component to make them suitable for chat history.
     '''
+    _default_kwargs = {
+        "markdown": {
+            "unsafe_allow_html": True,
+        },
+        "audio": {
+            "format": "mp3",
+        },
+        "vidio": {
+            "format": "mp4",
+        },
+        "image": {
+            "use_column_width": "auto",
+        },
+    }
 
     def __init__(self,
                  *,
@@ -18,37 +37,26 @@ class Element:
         self._output_method = output_method
         self._metadata = metadata
         self._kwargs = kwargs
-        self._defualt_kwargs = {
-            "markdown": {
-                "unsafe_allow_html": True,
-            },
-            "audio": {
-                "format": "mp3",
-            },
-            "vidio": {
-                "format": "mp4",
-            },
-            "image": {
-                "use_column_width": "auto",
-            },
-        }
         self._set_default_kwargs()
         self._dg = None
         self._place_holder = None
 
     def _set_default_kwargs(self) -> None:
-        if default := self._defualt_kwargs.get(self._output_method):
+        if default := self._default_kwargs.get(self._output_method):
             for k, v in default.items():
                 self._kwargs.setdefault(k, v)
+        self._kwargs.setdefault("key", uuid.uuid4().hex)
 
     def __call__(self, render_to: DeltaGenerator=None) -> DeltaGenerator:
         # assert self._dg is None, "Every element can be rendered once only."
         render_to = render_to or st
         self._place_holder = render_to.empty()
-        output_method = getattr(self._place_holder, self._output_method)
+        output_method = getattr(st, self._output_method, CUSTOM_OUTPUT_METHODS.get(self._output_method))
         assert callable(
-            output_method), f"The attribute st.{self._output_mehtod} is not callable."
-        self._dg = output_method(*self._args, **self._kwargs)
+            output_method), f"The attribute st.{self._output_method} or {self._output_method} is not callable."
+        with self._place_holder:
+            self._dg = output_method(self._content, **self._kwargs)
+
         return self._dg
 
     @property
@@ -133,7 +141,7 @@ class OutputElement(Element):
 
         return factory_cls(**kwargs)
 
-    def __call__(self, render_to: DeltaGenerator=None, direct: bool=False) -> DeltaGenerator:
+    def __call__(self, render_to: Optional[DeltaGenerator]=None, direct: bool=False) -> DeltaGenerator:
         if render_to is None:
             if self._place_holder is None:
                 self._place_holder = st.empty()
@@ -146,15 +154,20 @@ class OutputElement(Element):
 
         if self._in_expander:
             temp_dg = self._place_holder.status(self._title, expanded=self._expanded, state=self._state)
-        output_method = getattr(temp_dg, self._output_method)
+        # output_method = getattr(self._place_holder, self._output_method, globals().get(self._output_method))
+        # output_method = getattr(temp_dg, self._output_method)
+        # self._dg = output_method(self._content, **self._kwargs)
+        output_method = getattr(st, self._output_method, CUSTOM_OUTPUT_METHODS.get(self._output_method))
         assert callable(
-            output_method), f"The attribute st.{self._output_mehtod} is not callable."
-        self._dg = output_method(self._content, **self._kwargs)
+            output_method), f"The attribute st.{self._output_method} or {self._output_method} is not callable."
+        with temp_dg:
+            self._dg = output_method(self._content, **self._kwargs)
+
         return self._dg
 
     def update_element(
         self,
-        element: "OutputElement" = None,
+        element: Optional["OutputElement"] = None,
         *,
         title: str = None,
         expanded: bool = None,
@@ -171,13 +184,16 @@ class OutputElement(Element):
 
         if element is None:
             element = self
+        else:
+            element._kwargs["key"] = self._kwargs.get("key")
+
         for k, v in attrs.items():
             setattr(element, k, v)
         
         element(self.place_holder, direct=True)
         return self._dg
 
-    def status_from(self, target):
+    def status_from(self, target: "OutputElement"):
         for attr in ["_in_expander", "_expanded", "_title", "_state"]:
             setattr(self, attr, getattr(target, attr))
 
@@ -194,11 +210,31 @@ class Markdown(OutputElement):
         in_expander: bool = False,
         expanded: bool = False,
         state: Literal["running", "complete", "error"] = "running",
+        use_rich_markdown: bool = True,
+        theme_color: str = "null",
         **kwargs: Any,
     ) -> None:
-        super().__init__(content, output_method="markdown", title=title,
+        super().__init__(content, title=title,
                          in_expander=in_expander, expanded=expanded,
                          state=state, **kwargs)
+        self.use_rich_markdown(use_rich_markdown, theme_color)
+
+    def status_from(self, target: "Markdown"):
+        if self._output_method in ["richmd_hack", "richmd"]:
+            self._kwargs.setdefault("theme_color", target._kwargs.get("theme_color"))
+        else:
+            self._kwargs.pop("theme_color", None)
+        return super().status_from(target)
+
+    def use_rich_markdown(self, enable: bool = True, theme_color: str = None):
+        if enable:
+            self._output_method = "richmd"
+            self._kwargs["theme_color"] = theme_color
+            self._kwargs["mermaid_theme_CSS"] = ""
+        else:
+            self._output_method = "markdown"
+            self._kwargs.pop("theme_color", None)
+            self._kwargs.pop("mermaid_theme_CSS", None)
 
 
 class Image(OutputElement):
@@ -242,5 +278,22 @@ class Video(OutputElement):
         **kwargs: Any,
     ) -> None:
         super().__init__(content, output_method="video", title=title,
+                         in_expander=in_expander, expanded=expanded,
+                         state=state, **kwargs)
+
+
+class Json(OutputElement):
+    def __init__(
+        self,
+        content: Union[str, bytes, dict] = "",
+        title: str = "",
+        in_expander: bool = False,
+        expanded: bool = False,
+        state: Literal["running", "complete", "error"] = "running",
+        **kwargs: Any,
+    ) -> None:
+        if isinstance(content, dict):
+            content = json.dumps(content, ensure_ascii=False)
+        super().__init__(content, output_method="json", title=title,
                          in_expander=in_expander, expanded=expanded,
                          state=state, **kwargs)

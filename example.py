@@ -5,7 +5,11 @@ import simplejson as json
 
 
 llm = FakeLLM()
-chat_box = ChatBox()
+chat_box = ChatBox(
+    use_rich_markdown=True, # use streamlit-markdown
+    user_theme="green", # see streamlit_markdown.st_markdown for all available themes
+    assistant_theme="blue",
+)
 chat_box.use_chat_name("chat1") # add a chat conversatoin
 
 def on_chat_change():

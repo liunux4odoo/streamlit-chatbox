@@ -22,6 +22,11 @@ POSSIBLE_SCORES = {
 }
 
 
+# # patch streamlit to use streamlit-markdown (not work)
+# from streamlit_markdown import st_markdown
+# streamlit.delta_generator.DeltaGenerator.st_markdown = st_markdown
+
+
 class AttrDict(dict):
     def __getattr__(self, key: str) -> Any:
         try:
@@ -46,6 +51,9 @@ class ChatBox:
         session_key: str = "chat_history",
         user_avatar: str = "user",
         assistant_avatar: str = "assistant",
+        use_rich_markdown: bool = True,
+        user_theme: str = "green",
+        assistant_theme: str = "blue",
         greetings: Union[str, OutputElement, List[Union[str, OutputElement]]] = [],
     ) -> None:
         self._chat_name = chat_name
@@ -53,6 +61,9 @@ class ChatBox:
         self._session_key = session_key
         self._user_avatar = user_avatar
         self._assistant_avatar = assistant_avatar
+        self._use_rich_markdown = use_rich_markdown
+        self._user_theme = user_theme
+        self._assistant_theme = assistant_theme
         if not isinstance(greetings, list):
             greetings = [greetings]
         for i, greeting in enumerate(greetings):
@@ -60,6 +71,13 @@ class ChatBox:
                 greetings[i] = Markdown(greeting)
         self._greetings = greetings
 
+    @staticmethod
+    def register_output_method(name: str, func: Callable):
+        '''
+        register a custom output method, such as thirdpart component.
+        Use it as OutputElement(output_method=name, *args, **kwds) as Mardown()
+        '''
+        CUSTOM_OUTPUT_METHODS[name] = func
 
     @property
     def chat_inited(self):
@@ -321,6 +339,7 @@ class ChatBox:
     def _prepare_elements(
         self,
         elements: Union[OutputElement, str, List[Union[OutputElement, str]]],
+        role: Literal["user", "assistant"] = "user",
     ) -> List[OutputElement]:
         if isinstance(elements, str):
             elements = [Markdown(elements)]
@@ -329,6 +348,12 @@ class ChatBox:
         elif isinstance(elements, list):
             elements = [Markdown(e) if isinstance(
                 e, str) else e for e in elements]
+
+        theme = getattr(self, f"_{role}_theme", None)
+        for element in elements:
+            if self._use_rich_markdown and isinstance(element, Markdown):
+                element.use_rich_markdown(True, theme_color=theme)
+
         return elements or []
 
     def user_say(
@@ -337,7 +362,7 @@ class ChatBox:
         metadata: Dict = {},
     ) -> List[OutputElement]:
         self.init_session()
-        elements = self._prepare_elements(elements)
+        elements = self._prepare_elements(elements, role="user")
 
         chat_ele = st.chat_message("user", avatar=self._user_avatar)
         self._chat_containers.append(chat_ele)
@@ -353,7 +378,7 @@ class ChatBox:
         metadata: Dict = {},
     ) -> List[OutputElement]:
         self.init_session()
-        elements = self._prepare_elements(elements)
+        elements = self._prepare_elements(elements, role="assistant")
 
         chat_ele = st.chat_message("assistant", avatar=self._assistant_avatar)
         container = chat_ele.container()
@@ -416,8 +441,8 @@ class ChatBox:
         if not self.history or not self.history[history_index]["elements"]:
             return
 
-        if isinstance(element, str):
-            element = Markdown(element)
+        if isinstance(element, (str, Markdown)):
+            element = self._prepare_elements(element, role="assistant")[0]
             if streaming is None:
                 streaming = True
         if streaming and isinstance(element, Markdown):

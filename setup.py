@@ -9,7 +9,7 @@ def readme():
 
 setuptools.setup(
     name='streamlit-chatbox',
-    version='1.1.12.post4',
+    version='1.1.13',
     author='liunux',
     author_email='liunux@qq.com',
     description='A chat box and some helpful tools used to build chatbot app with streamlit',
@@ -24,5 +24,6 @@ setuptools.setup(
         'streamlit>=1.26.0',
         'simplejson',
         'streamlit-feedback',
+        'streamlit-markdown>=1.0.9',
     ]
 )

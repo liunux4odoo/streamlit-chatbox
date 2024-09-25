@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="Streamlit Chat Input">
+    <title>Chat Input</title>
+    <style>
+        .my-input {
+            border: solid black 1px;
+            margin: 5px;
+            padding: 5px;
+            border-radius: 5px;
+            min-height: 3rem;
+        }
+        .my-container {
+            border: none;
+            margin: 5px;
+            padding: 5px;
+        }
+        .file-box, .image-box {
+            border: solid black 1px;
+            width: 20rem;
+            height: 5rem;
+        }
+    </style>
+</head>
+<body>
+    <noscript>you need to enable javascript to run this app.</noscript>
+    <div id='basic_js'>
+        <script type="text/javascript" src="./js/streamlit.component.js"></script>
+    </div>
+
+    <div id="my_app">
+        <div id="my_container" class="my-container">
+            <div id="my_input" class="my-input" contenteditable="true"/>
+        </div>
+    </div>
+
+    <script>
+        var content = Array();
+        // document.getElementById("my_input").addEventListener("paste", (e) => {
+        //     if (! (e.clipboardData && e.clipboardData.items)) return
+        //     var items = e.clipboardData.items;
+        //     for(var i=0;i<items.length;i++){
+        //         if(items[i].kind==="string"){
+        //             var type = items[i].type
+        //             items[i].getAsString((s) => {
+        //                 console.log(type, s);
+        //             });
+        //         } else if(items[i].kind==="file"){
+        //             console.log(items[i].type, items[i].getAsFile());
+        //         } else if(items[i].kine==="image"){
+        //             console.log(items[i].type, items[i].getAsFile());
+        //         }
+        //     }
+        // })
+
+        function onDataFromPython(args){
+        }
+
+    initStreamlit();
+    </script>
+</body>
+</html>

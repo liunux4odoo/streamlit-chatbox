@@ -46,7 +46,11 @@ import simplejson as json
 
 
 llm = FakeLLM()
-chat_box = ChatBox()
+chat_box = ChatBox(
+    use_rich_markdown=True, # use streamlit-markdown
+    user_theme="green", # see streamlit_markdown.st_markdown for all available themes
+    assistant_theme="blue",
+)
 chat_box.use_chat_name("chat1") # add a chat conversatoin
 
 def on_chat_change():
@@ -211,7 +215,7 @@ if show_history:
 - [ ] improve output performance
 	- [x] streaming output message
 	- [x] show message in expander
-	- [ ] style the output message
+	- [x] rich output message using streamlit-markdown
     - [x] feedback by user
 
 - [x] export & import chat history
@@ -224,10 +228,15 @@ if show_history:
 
 # changelog
 
-## v1.1.12
-- fix type hint error with streamlit >= 1.33.0 (#8)
-- add ChatBox.change_chat_name to rename a chat conversation
-- maintain a context bound to chat conversation, it is like to be a sub session_state for every chat, context will get changed when you switch chat names.
-    - user can save chat bound values by `ChatBox.context['x'] = 1`
-    - values of widgets specified with a key can be saved to chat context with `ChatBox.context_from_session` and restored to st.session_state by `ChatBox.context_to_session`
+## v1.1.13
+- add Json output element
+- can choose to use streamlit-markdown instead of st.markdown. currently need streamlit==1.37.1 when streaming
+- user can register custom output method with `ChatBox.register_output_method`. This is useful to use thirdparty components:
+    ```python3
+    from streamlit_chatbox import *
+    from streamlit_markdown import st_hack_markdown
 
+    ChatBox.register_output_method("st_markdown", st_hack_markdown)
+    cb = ChatBox()
+    cb.user_say(OutputElement("user defined output method", output_method="st_markdown", theme_color="blue", mermaid_theme_CSS=""))
+    ```
