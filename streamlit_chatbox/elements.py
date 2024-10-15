@@ -45,7 +45,6 @@ class Element:
         if default := self._default_kwargs.get(self._output_method):
             for k, v in default.items():
                 self._kwargs.setdefault(k, v)
-        self._kwargs.setdefault("key", uuid.uuid4().hex)
 
     def __call__(self, render_to: DeltaGenerator=None) -> DeltaGenerator:
         # assert self._dg is None, "Every element can be rendered once only."
@@ -184,8 +183,8 @@ class OutputElement(Element):
 
         if element is None:
             element = self
-        else:
-            element._kwargs["key"] = self._kwargs.get("key")
+        elif key := self._kwargs.get("key"):
+            element._kwargs["key"] = key
 
         for k, v in attrs.items():
             setattr(element, k, v)
@@ -210,14 +209,14 @@ class Markdown(OutputElement):
         in_expander: bool = False,
         expanded: bool = False,
         state: Literal["running", "complete", "error"] = "running",
-        use_rich_markdown: bool = True,
+        use_rich_markdown: bool = False,
         theme_color: str = "null",
         **kwargs: Any,
     ) -> None:
         super().__init__(content, title=title,
                          in_expander=in_expander, expanded=expanded,
                          state=state, **kwargs)
-        self.use_rich_markdown(use_rich_markdown, theme_color)
+        self.enable_rich_markdown(use_rich_markdown, theme_color)
 
     def status_from(self, target: "Markdown"):
         if self._output_method in ["richmd_hack", "richmd"]:
@@ -226,15 +225,17 @@ class Markdown(OutputElement):
             self._kwargs.pop("theme_color", None)
         return super().status_from(target)
 
-    def use_rich_markdown(self, enable: bool = True, theme_color: str = None):
+    def enable_rich_markdown(self, enable: bool = True, theme_color: str = None):
         if enable:
             self._output_method = "richmd"
             self._kwargs["theme_color"] = theme_color
             self._kwargs["mermaid_theme_CSS"] = ""
+            self._kwargs.setdefault("key", uuid.uuid4().hex)
         else:
             self._output_method = "markdown"
             self._kwargs.pop("theme_color", None)
             self._kwargs.pop("mermaid_theme_CSS", None)
+            self._kwargs.pop("key", None)
 
 
 class Image(OutputElement):

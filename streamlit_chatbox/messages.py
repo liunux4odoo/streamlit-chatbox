@@ -1,5 +1,6 @@
 from streamlit_chatbox.elements import *
 from streamlit_feedback import streamlit_feedback
+from functools import partial
 import time
 import inspect
 import simplejson as json
@@ -341,20 +342,20 @@ class ChatBox:
         elements: Union[OutputElement, str, List[Union[OutputElement, str]]],
         role: Literal["user", "assistant"] = "user",
     ) -> List[OutputElement]:
+        result = []
+        theme = getattr(self, f"_{role}_theme", "null")
         if isinstance(elements, str):
-            elements = [Markdown(elements)]
+            result = [Markdown(elements)]
         elif isinstance(elements, OutputElement):
-            elements = [elements]
+            result = [elements]
         elif isinstance(elements, list):
-            elements = [Markdown(e) if isinstance(
+            result = [Markdown(e) if isinstance(
                 e, str) else e for e in elements]
 
-        theme = getattr(self, f"_{role}_theme", None)
-        for element in elements:
-            if self._use_rich_markdown and isinstance(element, Markdown):
-                element.use_rich_markdown(True, theme_color=theme)
-
-        return elements or []
+        for e in result:
+            if isinstance(e, Markdown):
+                e.enable_rich_markdown(self._use_rich_markdown, theme)
+        return result
 
     def user_say(
         self,
